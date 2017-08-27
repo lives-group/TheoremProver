@@ -15,6 +15,7 @@ data Term = V Var
           | TLeft Term  --Coprod Esq
           | TRight Term --CoProd Dir
           | TEither Term Term Term
+          | NaughtElim Term Term
       deriving Eq
 
 instance Show Term where

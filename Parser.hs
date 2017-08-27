@@ -28,10 +28,14 @@ expr    = prel (buildExpressionParser table (posl term))
 
 term    = (parens expr <|> posl typeName)  <?> "Expressao Simples "
 
-table   = [ [binary "&" (:&:) AssocLeft, binary "|" (:|:) AssocLeft ],
+table   = [ [prefix "!" (\t -> t :>: TFalse)],
+            [binary "&" (:&:) AssocLeft, binary "|" (:|:) AssocLeft ],
             [binary "->" (:>:) AssocRight  ]
           ]
 
+prefix :: String -> (Tipo -> Tipo) -> Operator String () Identity Tipo
+prefix  name fun       = Prefix (do{ posl (string name); return fun })
+ 
 binary :: String -> (Tipo -> Tipo -> Tipo) -> Assoc ->  Operator String () Identity Tipo
 binary name fun assoc = Infix (do{ posl (string name); return fun }) assoc
 

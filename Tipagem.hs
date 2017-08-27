@@ -44,6 +44,9 @@ curryTerm c (TEither t@(te1 ::: (a :|: b)) te2 te3) = case curryTerm c t of
                                                                                     Left _ -> throwError "Tipo errado"
                                                                       Left _ -> throwError "tipo Errado"
                                                         Left _ -> throwError "Tipo incorreto"
+curryTerm c (NaughtEli t1 t2) = case curryTerm c t of
+                                  Right TFalse -> curryTerm c t2
+                                  _ -> throwError "Error"
 
 lastT :: Tipo -> Tipo
 lastT (t1 :>: t2) = lastT t2
@@ -55,11 +58,15 @@ un b t s
   | otherwise = throwError s
 
 termCont :: Contexto -> Term -> Contexto
-termCont c ((V v) ::: t) = (v,t):c
-termCont c (V _)         = c
-termCont c (Snd a)       = termCont c a
-termCont c (Fst a)       = termCont c a
-termCont c (a ::: t)     = termCont c a
-termCont c (t1 :@: t2)   = termCont (termCont c t1) t2
-termCont c (t1 :*: t2)   = termCont (termCont c t1) t2
-termCont c (LamT v s t)  = termCont c t
+termCont c a@((V v) ::: t) = (v,t):c
+termCont c (a@(V _)) = c
+termCont c (Snd a) = termCont c a
+termCont c (Fst a) = termCont c a
+termCont c (a ::: t) = termCont c a
+termCont c (t1 :@: t2) = termCont x t2
+  where
+     x = termCont c t1
+termCont c (t1 :*: t2) = termCont x t2
+  where
+     x = termCont c t1
+termCont c (LamT v s t) = termCont c t

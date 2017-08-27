@@ -44,9 +44,9 @@ curryTerm c (TEither t@(te1 ::: (a :|: b)) te2 te3) = case curryTerm c t of
                                                                                     Left _ -> throwError "Tipo errado"
                                                                       Left _ -> throwError "tipo Errado"
                                                         Left _ -> throwError "Tipo incorreto"
-curryTerm c (NaughtElim t1 t2) = case curryTerm c t1 of
-                                  Right TFalse -> curryTerm c t2
-                                  t -> throwError ("Error: " ++ (show t) ++ " não tem tipo false")
+curryTerm c (NaughtElim t ti) = case curryTerm c t of
+                                  Right TFalse -> return ti
+                                  _ -> throwError "Error"
 
 lastT :: Tipo -> Tipo
 lastT (t1 :>: t2) = lastT t2

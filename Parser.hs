@@ -1,4 +1,4 @@
-module Parser(runt, deepInst, varInst) where
+module Parser(runt, varInst) where
 
 import Term
 import Data.Functor.Identity
@@ -39,7 +39,7 @@ table   = [ [prefix "!" (\t -> t :>: TFalse)],
 
 prefix :: String -> (Tipo -> Tipo) -> Operator String () Identity Tipo
 prefix  name fun       = Prefix (do{ posl (string name); return fun })
- 
+
 binary :: String -> (Tipo -> Tipo -> Tipo) -> Assoc ->  Operator String () Identity Tipo
 binary name fun assoc = Infix (do{ posl (string name); return fun }) assoc
 
@@ -55,11 +55,11 @@ varInst s t = let (v,s') = newVar s in ((V v) ::: t, s')
 (>->) :: (a,State) -> (State -> (b,State)) -> (b,State)
 (>->) (x,s) f = f s
 
-deepInst :: State -> Tipo -> (Term,State)
-deepInst s t@(T v)       = varInst s t
-deepInst s t@(t1 :|: t2) = varInst s t
-deepInst s (t1 :>: t2)   = (deepInst s t2) >=> (\s' t' -> newVar s' >=> (\s'' var -> (LamT var t1 t',s'')  ))
-deepInst s (t1 :&: t2)   = (deepInst s t1) >=> (\s' esq -> deepInst s' t2 >=> (\s'' dir -> ((esq :*: dir),s'')))
+-- deepInst :: State -> Tipo -> (Term,State)
+-- deepInst s t@(T v)       = varInst s t
+-- deepInst s t@(t1 :|: t2) = varInst s t
+-- deepInst s (t1 :>: t2)   = (deepInst s t2) >=> (\s' t' -> newVar s' >=> (\s'' var -> (LamT var t1 t',s'')  ))
+-- deepInst s (t1 :&: t2)   = (deepInst s t1) >=> (\s' esq -> deepInst s' t2 >=> (\s'' dir -> ((esq :*: dir),s'')))
 
 runt :: String -> Either ParseError Tipo
 runt = runParser expr () ""

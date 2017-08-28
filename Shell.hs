@@ -31,8 +31,8 @@ loadTerm s@(np,pre,obj,pst,ctx,sup) ys
            (\t -> (return (varInst s t)) >>= (\(t,(np,pre,obj,pst,ctx,sup)) -> return (np+1, pre++[t],obj,pst,ctx,sup)))
            (runt ys)
 
-tObj :: Term -> Tipo
-tObj (t1 ::: t2) = t2
+-- tObj :: Term -> Tipo
+-- tObj (t1 ::: t2) = t2
 
 fim :: Objetivo -> Term -> State -> IO (State)
 fim o f s@(_,_,_,_,ctx,sup) = case (ti,sup) of
@@ -44,103 +44,95 @@ fim o f s@(_,_,_,_,ctx,sup) = case (ti,sup) of
 int :: String -> Int
 int s = read s :: Int
 
-newTipo :: String  -> IO Tipo
-newTipo ys = either (\_ -> putStrLn "Termo inválido. Digite um termo correto." >> return TFalse )
-                    (\t -> return t)
+newTipo :: String  -> Result Tipo
+newTipo ys = either (\_ -> throwError "" )
+                    (\t -> Right t)
                     (runt ys)
 
 elimE :: Int -> Int -> String -> State -> IO State
-elimE 1 p ys s@(np,pre,obj,pst,ctx,sup) = do  tipo <- newTipo ys
-                                              case tipo of
-                                                TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                ti -> case curryTerm ctx (Snd (pre !! (p-1)) ::: tipo) of
-                                                        Right _ -> return (np+1, pre ++[Snd (pre !! (p-1)) ::: tipo],obj,pst,ctx,sup)
-                                                        Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
-elimE 2 p ys s@(np,pre,obj,pst,ctx,sup) = do  tipo <- newTipo ys
-                                              case tipo of
-                                                TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                ti -> case curryTerm ctx (Fst (pre !! (p-1)) ::: tipo) of
-                                                        Right _ -> return (np+1, pre ++[Fst (pre !! (p-1)) ::: tipo],obj,pst,ctx,sup)
-                                                        Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+elimE 1 p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                            Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                            Right ti -> case curryTerm ctx (Snd (pre !! (p-1)) ::: ti) of
+                                                          Right _ -> return (np+1, pre ++[Snd (pre !! (p-1)) ::: ti],obj,pst,ctx,sup)
+                                                          Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+
+elimE 2 p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                            Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                            Right ti -> case curryTerm ctx (Fst (pre !! (p-1)) ::: ti) of
+                                                    Right _ -> return (np+1, pre ++[Fst (pre !! (p-1)) ::: ti],obj,pst,ctx,sup)
+                                                    Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
 
 elimI :: Int -> Int -> String -> State -> IO State
-elimI p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                               case tipo of
-                                                 TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                 ti -> case curryTerm ctx (t1 :@: t2 ::: (ti)) of
-                                                         Right _ -> return (np+1, pre ++[t1 :@: t2 ::: (ti)],obj,pst,ctx,sup)
-                                                         Left a -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+elimI p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                             Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                             Right ti -> case curryTerm ctx (t1 :@: t2 ::: (ti)) of
+                                                           Right _ -> return (np+1, pre ++[t1 :@: t2 ::: (ti)],obj,pst,ctx,sup)
+                                                           Left a -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t1 = pre !! (p1-1)
     t2 = pre !! (p2-1)
 
 intrE :: Int -> Int -> String -> State -> IO State
-intrE p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                               case tipo of
-                                                 TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                 ti -> case curryTerm ctx (t1 :*: t2 ::: (ti)) of
-                                                         Right _ -> return (np+1, pre ++[t1 :*: t2 ::: (ti)],obj,pst,ctx,sup)
-                                                         Left a -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+intrE p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                             Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                             Right ti -> case curryTerm ctx (t1 :*: t2 ::: (ti)) of
+                                                           Right _ -> return (np+1, pre ++[t1 :*: t2 ::: (ti)],obj,pst,ctx,sup)
+                                                           Left a -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t1 = pre !! (p1-1)
     t2 = pre !! (p2-1)
 
 
 intrO :: Int -> Int -> String -> State -> IO State
-intrO 1 p ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                             case tipo of
-                                                TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                ti -> case curryTerm ctx (TLeft t  ::: (ti)) of
-                                                        Right _ -> return (np+1, pre ++[TLeft t ::: ti],obj,pst,ctx,sup)
-                                                        Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+intrO 1 p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                            Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                            Right ti -> case curryTerm ctx (TLeft t  ::: (ti)) of
+                                                          Right _ -> return (np+1, pre ++[TLeft t ::: ti],obj,pst,ctx,sup)
+                                                          Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t = pre !! (p-1)
-intrO 2 p ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                             case tipo of
-                                                TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                ti -> case curryTerm ctx (TRight t  ::: ti) of
-                                                        Right _ -> return (np+1, pre ++[TRight t ::: ti],obj,pst,ctx,sup)
-                                                        Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+
+intrO 2 p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                            Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                            Right ti -> case curryTerm ctx (TRight t  ::: ti) of
+                                                          Right _ -> return (np+1, pre ++[TRight t ::: ti],obj,pst,ctx,sup)
+                                                          Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t = pre !! (p-1)
 
 elimO :: Int -> Int -> Int -> String -> State -> IO State
-elimO p1 p2 p3 ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                                  case tipo of
-                                                    TFalse -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
-                                                    ti -> case curryTerm ctx (TEither t1 t2 t3 ::: ti) of
-                                                            Right _ -> return (np+1, pre ++[TEither t1 t2 t3 ::: ti],obj,pst,ctx,sup)
-                                                            Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+elimO p1 p2 p3 ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                                Left _ -> putStrLn "Não foi possivel identificar a termo resultante" >> return s
+                                                Right ti -> case curryTerm ctx (TEither t1 t2 t3 ::: ti) of
+                                                              Right _ -> return (np+1, pre ++[TEither t1 t2 t3 ::: ti],obj,pst,ctx,sup)
+                                                              Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
 
   where
     t1 = pre !! (p1-1)
     t2 = pre !! (p2-1)
     t3 = pre !! (p3-1)
 
-
-
 intrI :: Int -> Int -> String -> State -> IO State
-intrI p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                               case (tipo,t1) of
-                                                 ((ti1 :>: ti2),(V a):::b) -> case curryTerm ctx (LamT a b t2 ::: tipo) of
-                                                                                Right _ -> return (delete (a,b) ctx) >>= (\c -> return (np+1,pre++[(LamT a b t2 ::: tipo)],obj,pst,c,sup-1))
-                                                                                Left _ -> putStrLn "Não foi possível reduzir para o termo desejado" >> return s
-                                                 _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+intrI p1 p2 ys s@(np,pre,obj,pst,ctx,sup) = case (newTipo ys,t1) of
+                                               (Right tipo@(ti1 :>: ti2),(V a):::b) -> case curryTerm ctx (LamT a b t2 ::: tipo) of
+                                                                                        Right _ -> return (delete (a,b) ctx) >>= (\c -> return (np+1,pre++[(LamT a b t2 ::: tipo)],obj,pst,c,sup-1))
+                                                                                        Left _ -> putStrLn "Não foi possível reduzir para o termo desejado" >> return s
+                                               _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t1 = pre!!(p1-1)
     t2 = pre!!(p2-1)
 
 ctrl :: Int -> String -> State -> IO State
-ctrl p ys s@(np,pre,obj,pst,ctx,sup) = do tipo <- newTipo ys
-                                          case curryTerm ctx ((NaughtElim t tipo) ::: tipo) of
-                                             Right _ -> return (np+1, pre ++[NaughtElim t tipo ::: tipo],obj,pst,ctx,sup)
-                                             Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+ctrl p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
+                                          Right tipo -> case curryTerm ctx ((NaughtElim t tipo) ::: tipo) of
+                                                           Right _ -> return (np+1, pre ++[NaughtElim t tipo ::: tipo],obj,pst,ctx,sup)
+                                                           Left _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
+                                          _ -> putStrLn "Não é possivel reduzir para o termo desejado." >> return s
   where
     t = pre!!(p-1)
 
 process :: State -> IO (State)
 process s@(np,pre,obj,pst,ctx,sup) = do putStr $(show np) ++ ":"
-                                        putStrLn $ show pre
                                         x <- getLine
                                         case words x of
                                           "cqe":xs -> fim obj (last pre) s

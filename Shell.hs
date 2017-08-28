@@ -31,9 +31,6 @@ loadTerm s@(np,pre,obj,pst,ctx,sup) ys
            (\t -> (return (varInst s t)) >>= (\(t,(np,pre,obj,pst,ctx,sup)) -> return (np+1, pre++[t],obj,pst,ctx,sup)))
            (runt ys)
 
--- tObj :: Term -> Tipo
--- tObj (t1 ::: t2) = t2
-
 fim :: Objetivo -> Term -> State -> IO (State)
 fim o f s@(_,_,_,_,ctx,sup) = case (ti,sup) of
                                 (Right _,0) -> return s
@@ -131,6 +128,24 @@ ctrl p ys s@(np,pre,obj,pst,ctx,sup) = case newTipo ys of
   where
     t = pre!!(p-1)
 
+help :: IO ()
+help = [  "Assistente de Prova 1.0",
+          " ",
+          "Comandos:",
+          "E&d => Eliminacao do e a direita. Exemplo: a & b, utilizando E&d, sobra a.",
+          "E&e => Eliminacao do e a esquerda. Exemplo: a & b, utilizando E&e, sobra b.",
+          "I|d => Introducao do ou a direita. Sendo que o termo pode ser qualquer coisa. Exemplo: b, utilizando I|d, ficamos com a | b, sendo a qualquer termo.",
+          "I|e => Introducao do ou a esquerda. Sendo que o termo pode ser qualquer coisa. Exemplo: a, utilizando I|e, ficamos com a | b, sendo b qualquer termo.",
+          "I& => Introducao do e.",
+          "E-> => Eliminacao da implicacao.",
+          "I-> => Introducao da implicacao. Necessario que tenha suposto a variavel.",
+          "E| => Elimicacao do ou.",
+          "suponha: => supoe o termo desejado.",
+          "ctr => Contradicao. Onde o primeiro elemento e a negacao do segundo.",
+          "F => Prova por Falso.",
+          "cqe => Termina a prova."
+          ]
+
 process :: State -> IO (State)
 process s@(np,pre,obj,pst,ctx,sup) = do putStr $(show np) ++ ":"
                                         x <- getLine
@@ -148,8 +163,8 @@ process s@(np,pre,obj,pst,ctx,sup) = do putStr $(show np) ++ ":"
                                           "I->":t1:t2:"=>":ti -> intrI (int t1) (int t2) (unwords ti) s >>= (\s -> process s)
                                           "id":t -> return (pre !!((int (unwords t)) -1)) >>= (\t -> process (np,pre++[t], obj, pst, ctx,sup))
                                           "E|":t1:t2:t3:"=>":tf -> elimO (int t1) (int t2) (int t3) (unwords tf) s >>= (\s -> process s)
-                                          "F":t1:t2:"=>":tf -> elimI (int t1) (int t2) (unwords tf) s >>= (\s -> process s)
-                                          "ctr":t1:"=>":tf -> ctrl (int t1) (unwords tf) s >>= (\s -> process s)
+                                          "ctr":t1:t2:"=>":tf -> elimI (int t1) (int t2) (unwords tf) s >>= (\s -> process s)
+                                          "F":t1:"=>":tf -> ctrl (int t1) (unwords tf) s >>= (\s -> process s)
                                           _ -> putStrLn ("Comando não reconhecido.") >> process s
 
 main :: IO ()

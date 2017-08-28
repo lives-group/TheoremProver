@@ -21,7 +21,11 @@ parens p = posl (char '(') >>
            (p >>= (\r -> posl (char ')') >> return r))
 
 typeName :: Parser Tipo
-typeName = many1 (alphaNum) >>= return.T
+typeName = many1 (alphaNum) >>= (return.b)
+ where
+     b "F"  = TFalse
+     b s = T s
+
 
 expr    = prel (buildExpressionParser table (posl term))
           <?> "Expressao Lógica"

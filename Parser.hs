@@ -49,17 +49,17 @@ newVar (sc,sq,obj,vc,ctx,sup) = ("x" ++ (show vc), (sc,sq,obj,vc+1,ctx,sup))
 varInst :: State -> Tipo -> (Term,State)
 varInst s t = let (v,s') = newVar s in ((V v) ::: t, s')
 
-(>=>) :: (a,State) -> (State -> a -> (b,State)) -> (b,State)
-(>=>) (x,s) f = f s x
+runt :: String -> Either ParseError Tipo
+runt = runParser expr () ""
 
-(>->) :: (a,State) -> (State -> (b,State)) -> (b,State)
-(>->) (x,s) f = f s
+-- (>=>) :: (a,State) -> (State -> a -> (b,State)) -> (b,State)
+-- (>=>) (x,s) f = f s x
+
+-- (>->) :: (a,State) -> (State -> (b,State)) -> (b,State)
+-- (>->) (x,s) f = f s
 
 -- deepInst :: State -> Tipo -> (Term,State)
 -- deepInst s t@(T v)       = varInst s t
 -- deepInst s t@(t1 :|: t2) = varInst s t
 -- deepInst s (t1 :>: t2)   = (deepInst s t2) >=> (\s' t' -> newVar s' >=> (\s'' var -> (LamT var t1 t',s'')  ))
 -- deepInst s (t1 :&: t2)   = (deepInst s t1) >=> (\s' esq -> deepInst s' t2 >=> (\s'' dir -> ((esq :*: dir),s'')))
-
-runt :: String -> Either ParseError Tipo
-runt = runParser expr () ""
